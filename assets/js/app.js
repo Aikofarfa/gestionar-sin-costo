@@ -57,10 +57,10 @@ function bindAuth() {
     const password = String(values.get("password"));
     try {
       if (state.authMode === "signup") {
-        const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { full_name: String(values.get("full_name")).trim() } } });
+        const { data, error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: window.location.href, data: { full_name: String(values.get("full_name")).trim() } } });
         if (error) throw error;
         if (!data.session) toast("Revisa tu correo para confirmar la cuenta y luego inicia sesión.");
-        else toast("Cuenta creada. Tu rol inicial es Vendedor.");
+        else toast("Cuenta creada. Un administrador debe aprobar tu acceso antes de entrar.");
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
@@ -82,15 +82,24 @@ async function enterWorkspace(session) {
   if (!session) {
     state.profile = null;
     state.role = "vendedor";
+    $("#pending-screen").hidden = true;
     showAuth();
     return;
   }
   $("#auth-screen").hidden = true;
+  $("#pending-screen").hidden = true;
   $("#app-shell").hidden = false;
-  const { data, error } = await supabase.from("profiles").select("id,email,full_name,role").eq("id", session.user.id).maybeSingle();
+  const { data, error } = await supabase.from("profiles").select("id,email,full_name,role,is_active").eq("id", session.user.id).maybeSingle();
   if (error) { toast("No se pudo cargar el perfil. Verifica que la migración de Supabase esté aplicada.", "error"); }
   state.profile = data || { id: session.user.id, email: session.user.email, full_name: session.user.user_metadata?.full_name, role: "vendedor" };
   state.role = state.profile.role || "vendedor";
+  if (!state.profile.is_active) {
+    state.profile = { ...state.profile, role: "vendedor" };
+    $("#app-shell").hidden = true;
+    $("#pending-name").textContent = shortName(state.profile);
+    $("#pending-screen").hidden = false;
+    return;
+  }
   const name = shortName(state.profile);
   $("#sidebar-name").textContent = name;
   $("#sidebar-role").textContent = state.role === "admin" ? "Administrador" : "Vendedor";
@@ -291,11 +300,11 @@ async function renderReports(root) {
 
 async function renderUsers(root) {
   if (state.role !== "admin") throw new Error("Solo un administrador puede gestionar usuarios.");
-  const { data, error } = await supabase.from("profiles").select("id,email,full_name,role,created_at").order("created_at", { ascending: true }).limit(500);
+  const { data, error } = await supabase.from("profiles").select("id,email,full_name,role,is_active,created_at").order("created_at", { ascending: true }).limit(500);
   if (error) throw error;
-  root.innerHTML = `${intro("Usuarios", "Administra los perfiles que tienen acceso a este negocio.")}
-    <p class="inline-note inline-note-spaced">Para crear una cuenta, usa el registro de la pantalla de acceso. Cada cuenta nueva inicia como Vendedor; luego puedes cambiar su rol aquí.</p>
-    <div class="table-panel"><div class="table-scroll"><table class="data-table">${tableHead(["Persona", "Correo", "Rol", "Acceso desde", ""])}<tbody>${(data || []).map(profile => `<tr><td><span class="table-primary">${esc(profile.full_name || "Sin nombre")}</span></td><td>${esc(profile.email || "—")}</td><td><span class="badge ${profile.role === "admin" ? "role-admin" : ""}">${profile.role === "admin" ? "Administrador" : "Vendedor"}</span></td><td>${dateShort(profile.created_at)}</td><td>${profile.id === state.session.user.id ? '<span class="table-secondary">Tu cuenta</span>' : `<button class="table-action" data-action="user-role" data-id="${profile.id}" data-role="${profile.role}">Cambiar rol</button>`}</td></tr>`).join("") || `<tr><td colspan="5">${empty("Sin usuarios", "Los perfiles aparecen después de registrarse.")}</td></tr>`}</tbody></table></div></div>`;
+  root.innerHTML = `${intro("Usuarios", "Aprueba el acceso y administra los roles de este negocio.")}
+    <p class="inline-note inline-note-spaced">Las cuentas nuevas quedan pendientes y no pueden consultar información hasta que un administrador las apruebe.</p>
+    <div class="table-panel"><div class="table-scroll"><table class="data-table">${tableHead(["Persona", "Correo", "Estado", "Rol", "Acceso desde", ""])}<tbody>${(data || []).map(profile => `<tr><td><span class="table-primary">${esc(profile.full_name || "Sin nombre")}</span></td><td>${esc(profile.email || "—")}</td><td><span class="badge ${profile.is_active ? "good" : "low"}">${profile.is_active ? "Activo" : "Pendiente"}</span></td><td><span class="badge ${profile.role === "admin" ? "role-admin" : ""}">${profile.role === "admin" ? "Administrador" : "Vendedor"}</span></td><td>${dateShort(profile.created_at)}</td><td>${profile.id === state.session.user.id ? '<span class="table-secondary">Tu cuenta</span>' : `<div class="table-actions"><button class="table-action" data-action="user-status" data-id="${profile.id}" data-active="${profile.is_active}">${profile.is_active ? "Suspender" : "Aprobar"}</button>${profile.is_active ? `<button class="table-action" data-action="user-role" data-id="${profile.id}" data-role="${profile.role}">Cambiar rol</button>` : ""}</div>`}</td></tr>`).join("") || `<tr><td colspan="6">${empty("Sin usuarios", "Los perfiles aparecen después de registrarse.")}</td></tr>`}</tbody></table></div></div>`;
 }
 
 function openModal(title, subtitle, content) {
@@ -319,6 +328,7 @@ async function handleViewAction(action, id) {
   if (action === "client-delete") return askConfirm("¿Eliminar este cliente?", "Las ventas anteriores se conservarán sin el vínculo al cliente.", async () => { const { error } = await supabase.from("clients").delete().eq("id", id); if (error) throw error; toast("Cliente eliminado."); await renderView(); });
   if (action === "client-history") return showClientHistory(id);
   if (action === "user-role") return changeRole(id);
+  if (action === "user-status") return changeUserStatus(id);
   if (action === "refresh") return renderView();
   if (action === "export-report") return exportReport();
 }
@@ -341,6 +351,17 @@ async function changeRole(userId) {
     if (updateError) throw updateError;
     toast("Rol actualizado."); await renderView();
   }, "Confirmar cambio");
+}
+
+async function changeUserStatus(userId) {
+  const { data, error } = await supabase.from("profiles").select("id,full_name,email,is_active").eq("id", userId).single();
+  if (error) throw error;
+  const active = !data.is_active;
+  askConfirm(active ? "Aprobar acceso" : "Suspender acceso", `${data.full_name || data.email} ${active ? "podrá entrar y consultar los datos del negocio" : "perderá acceso a los datos del negocio"}.`, async () => {
+    const { error: updateError } = await supabase.from("profiles").update({ is_active: active }).eq("id", userId);
+    if (updateError) throw updateError;
+    toast(active ? "Cuenta aprobada." : "Acceso suspendido."); await renderView();
+  }, active ? "Aprobar cuenta" : "Suspender cuenta");
 }
 
 function csvCell(value) { return `"${String(value ?? "").replaceAll('"', '""')}"`; }
@@ -431,6 +452,7 @@ $("#modal-root").addEventListener("submit", async event => {
 $$(".nav-link[data-view]").forEach(button => button.addEventListener("click", () => navigate(button.dataset.view)));
 $("#mobile-menu").addEventListener("click", () => { const open = $("#sidebar").classList.toggle("open"); $("#mobile-menu").setAttribute("aria-expanded", String(open)); });
 $("#signout-button").addEventListener("click", async () => { const { error } = await supabase.auth.signOut(); if (error) toast(error.message, "error"); });
+$("#pending-signout").addEventListener("click", async () => { const { error } = await supabase.auth.signOut(); if (error) toast(error.message, "error"); });
 document.addEventListener("keydown", event => { if (event.key === "Escape") closeModal(); });
 
 async function start() {

@@ -4,7 +4,7 @@ La migración versionada crea cinco tablas en el esquema `public`.
 
 | Tabla | Propósito | Campos clave |
 |---|---|---|
-| `profiles` | Perfil de usuario autenticado | `id` (FK a `auth.users`), `email`, `full_name`, `role`, `business_name` |
+| `profiles` | Perfil y estado de membresía | `id` (FK a `auth.users`), `email`, `full_name`, `role`, `is_active`, `business_name` |
 | `products` | Catálogo e inventario | `id`, `name`, `code`, `price`, `stock`, `min_stock`, `category`, `description`, `created_by` |
 | `clients` | Directorio de clientes | `id`, `name`, `phone`, `email`, `address`, `created_by` |
 | `sales` | Encabezado de cada venta | `id`, `client_id` opcional, `user_id`, `total`, `created_at` |
@@ -20,6 +20,6 @@ La migración versionada crea cinco tablas en el esquema `public`.
 
 ## Seguridad y consistencia
 
-RLS se habilita en las cinco tablas. El cliente autenticado solo ve su propio perfil; el rol Administrador puede consultar y cambiar perfiles. Los usuarios autenticados del negocio comparten productos, clientes e historial de ventas. El navegador solo puede leer ventas; crear una venta requiere ejecutar la función `register_sale`. Restricciones de Postgres impiden cantidades negativas, precios negativos y existencias negativas.
+RLS se habilita en las cinco tablas. El perfil propio puede consultar su estado; administradores activos pueden consultar y cambiar perfiles. Las tablas operativas y la función `register_sale` requieren que el perfil tenga `is_active = true`. Las cuentas nuevas se crean pendientes, sin acceso a productos, clientes ni ventas, hasta su aprobación. Los usuarios aprobados de este negocio comparten esos datos. El navegador no puede insertar ventas directamente; crear una venta requiere ejecutar la función transaccional `register_sale`. Restricciones de Postgres impiden cantidades negativas, precios negativos y existencias negativas.
 
 Los importes se guardan como `numeric(12,2)` y el frontend los muestra en COP. Los IDs son UUID.

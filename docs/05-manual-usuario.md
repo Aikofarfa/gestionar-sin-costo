@@ -2,10 +2,11 @@
 
 ## Entrar por primera vez
 
-1. Abre https://aikofarfa.github.io/gestionar-sin-costo/.
-2. Selecciona **Crear una cuenta**, escribe nombre, correo y contraseña.
-3. Si se solicita, confirma el correo desde el mensaje de Supabase y vuelve a la página.
-4. La primera cuenta administradora debe recibir el rol `admin` desde el SQL Editor de Supabase; el registro público nunca asigna este rol automáticamente. Sigue el procedimiento del README.
+1. El responsable configura la URL de GitHub Pages en **Supabase → Authentication → URL Configuration** (ver README).
+2. Abre https://aikofarfa.github.io/gestionar-sin-costo/ y selecciona **Crear una cuenta**.
+3. Confirma el correo si se solicita. Las cuentas nuevas quedan **pendientes** y no pueden ver información del negocio.
+4. La primera cuenta administradora debe activarse manualmente como `role = 'admin'` e `is_active = true` desde el SQL Editor. Sigue el procedimiento del README.
+5. Cuando un administrador apruebe la cuenta, vuelve a iniciar sesión para entrar al panel.
 
 ## Productos e inventario
 
@@ -28,7 +29,7 @@ En **Clientes**, registra nombre y, si lo deseas, teléfono, correo y dirección
 
 ## Gestión de usuarios
 
-El Administrador abre **Usuarios** para consultar perfiles y alternar los roles Administrador/Vendedor. Una cuenta nueva se registra como Vendedor. Crea el acceso de cada integrante con el formulario de registro y luego revisa su rol. Los vendedores no pueden consultar ni modificar los roles.
+El Administrador abre **Usuarios** para aprobar o suspender accesos, y alternar los roles Administrador/Vendedor de cuentas activas. Los vendedores no pueden consultar ni modificar perfiles. Las cuentas pendientes no pueden leer productos, clientes, ventas ni informes; RLS lo impide también si se intenta llamar directamente a la API.
 
 ## Cerrar sesión y recuperar acceso
 
