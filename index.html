@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="es-CO">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f5f5f7" />
+    <meta name="description" content="GestPyme: inventario, ventas y clientes en un solo lugar." />
+    <title>GestPyme · Gestión simple para tu negocio</title>
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./assets/css/app.css" />
+    <script src="./config.js"></script>
+  </head>
+  <body>
+    <div id="connection-screen" class="connection-screen" hidden>
+      <section class="connection-card">
+        <div class="brand-mark" aria-hidden="true">G</div>
+        <p class="eyebrow">GestPyme</p>
+        <h1>Conectemos tu negocio</h1>
+        <p>La página está publicada. Para iniciar sesión, completa la configuración de Supabase indicada en el <a href="https://github.com/Aikofarfa/gestionar-sin-costo#configuracion-de-supabase">README del proyecto</a>.</p>
+        <p class="muted small">Solo se necesita la URL del proyecto y su clave publicable. Nunca pongas una clave secreta en una página web.</p>
+      </section>
+    </div>
+
+    <main id="auth-screen" class="auth-screen" hidden>
+      <section class="auth-intro">
+        <a class="wordmark" href="./" aria-label="GestPyme, inicio"><span class="brand-mark">G</span><span>GestPyme</span></a>
+        <div class="auth-copy">
+          <p class="eyebrow">Un negocio más claro, cada día</p>
+          <h1>Todo en orden.<br /><span>Todo en un solo lugar.</span></h1>
+          <p>Controla inventario, ventas y clientes con una herramienta sencilla para tu Pyme.</p>
+        </div>
+        <p class="auth-footnote">Gestión simple para negocios que están creciendo.</p>
+      </section>
+      <section class="auth-panel">
+        <div class="auth-box">
+          <p class="eyebrow" id="auth-eyebrow">Bienvenido de nuevo</p>
+          <h2 id="auth-title">Inicia sesión</h2>
+          <p class="muted" id="auth-subtitle">Ingresa a tu espacio de trabajo.</p>
+          <form id="auth-form" class="form-stack">
+            <label id="name-field" hidden>Nombre completo<input name="full_name" autocomplete="name" /></label>
+            <label>Correo electrónico<input name="email" type="email" autocomplete="email" required /></label>
+            <label>Contraseña<input name="password" type="password" autocomplete="current-password" minlength="8" required /></label>
+            <button class="button button-primary button-wide" id="auth-submit" type="submit">Iniciar sesión</button>
+          </form>
+          <button class="text-button auth-toggle" id="auth-toggle" type="button">¿Primera vez? Crear una cuenta</button>
+          <p class="auth-note">Tus datos se protegen con acceso seguro y permisos por rol.</p>
+        </div>
+      </section>
+    </main>
+
+    <div id="app-shell" class="app-shell" hidden>
+      <aside class="sidebar" id="sidebar">
+        <a class="wordmark sidebar-brand" href="#dashboard" aria-label="GestPyme, panel"><span class="brand-mark">G</span><span>GestPyme</span></a>
+        <p class="nav-caption">GESTIÓN</p>
+        <nav class="main-nav" aria-label="Navegación principal">
+          <button class="nav-link active" data-view="dashboard"><span class="nav-icon">⌂</span><span>Resumen</span></button>
+          <button class="nav-link" data-view="products"><span class="nav-icon">▦</span><span>Productos</span></button>
+          <button class="nav-link" data-view="sales"><span class="nav-icon">↗</span><span>Ventas</span></button>
+          <button class="nav-link" data-view="clients"><span class="nav-icon">◎</span><span>Clientes</span></button>
+          <button class="nav-link" data-view="reports"><span class="nav-icon">▤</span><span>Informes</span></button>
+          <button class="nav-link admin-only" data-view="users" hidden><span class="nav-icon">♙</span><span>Usuarios</span></button>
+        </nav>
+        <div class="sidebar-bottom">
+          <div class="account-mini"><span class="avatar" id="sidebar-avatar">G</span><span class="account-copy"><strong id="sidebar-name">Mi cuenta</strong><small id="sidebar-role">Vendedor</small></span></div>
+          <button class="nav-link signout" id="signout-button"><span class="nav-icon">↪</span><span>Cerrar sesión</span></button>
+        </div>
+      </aside>
+
+      <main class="main-area">
+        <header class="topbar">
+          <button class="mobile-menu" id="mobile-menu" aria-label="Abrir menú" aria-expanded="false">☰</button>
+          <div class="page-heading"><p class="eyebrow" id="today-label">GESTPYME</p><h1 id="page-title">Resumen</h1></div>
+          <div class="topbar-right"><span class="status-dot" aria-hidden="true"></span><span id="topbar-name">Mi negocio</span></div>
+        </header>
+        <section id="view-root" class="view-root" aria-live="polite"></section>
+      </main>
+    </div>
+
+    <div id="modal-root"></div>
+    <div id="toast-root" class="toast-root" aria-live="polite" aria-atomic="true"></div>
+    <script type="module" src="./assets/js/app.js"></script>
+  </body>
+</html>
